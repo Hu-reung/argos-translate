@@ -8,12 +8,12 @@ import os
 
 from common import file_path, ocr_result1
 
-# ✅ 모델 설치 (이미 설치했다면 주석 처리해도 됨)
+# 모델 설치 (이미 설치했다면 주석 처리해도 됨)
 model_path = r"C:\Users\hureu\Downloads\translate-en_ko-1_1.argosmodel"
 if os.path.exists(model_path):
     argostranslate.package.install_from_path(model_path)
 
-# ✅ 번역 모델 준비
+# 번역 모델 준비
 installed_languages = argostranslate.translate.get_installed_languages()
 from_lang = next((lang for lang in installed_languages if lang.code == "en"), None)
 to_lang = next((lang for lang in installed_languages if lang.code == "ko"), None)
@@ -26,16 +26,14 @@ translation = from_lang.get_translation(to_lang)
 
 translated_results = []
 
-from pdf_reader_python import extract_text
+from pdf_reader_python import extracted_text
 
-# ✅ PDF 열기 
+# PDF 열기 
 def load_pdf():
     file_path = filedialog.askopenfilename(filetypes=[("PDF 파일", "*.pdf")])
     if not file_path:
         return
     try:
-        extracted_text = extract_text(file_path)
-        
         input_textbox.delete("1.0", tk.END)
         input_textbox.insert(tk.END, extracted_text)
         messagebox.showinfo("성공", "PDF 텍스트 추출 완료!")
@@ -43,30 +41,38 @@ def load_pdf():
     except Exception as e:
         messagebox.showerror("오류", f"텍스트 추출 실패:\n{e}")
 
-# ✅ 번역 함수
+# 번역 함수
 def translate_texts():
     input_text = input_textbox.get("1.0", tk.END).strip()
     if not input_text:
         messagebox.showwarning("경고", "번역할 내용이 없습니다.")
         return
 
-    lines = input_text.splitlines()
+    pages = input_text.split("===== Page ")
     output_textbox.delete("1.0", tk.END)
     translated_results.clear()
 
-    chunk_size = 10
-    total_chunks = (len(lines) + chunk_size - 1) // chunk_size
-
-    for i in range(total_chunks):
-        chunk = lines[i*chunk_size : (i+1)*chunk_size]
-        chunk_text = "\n".join(chunk)
-        if not chunk_text.strip():
+    for page in pages:
+        if not page.strip():
             continue
-        try:
-            translated = translation.translate(chunk_text)
-        except Exception as e:
-            translated = f"[번역 오류: {e}]"
-        result = f"=== {i*chunk_size+1}~{min((i+1)*chunk_size, len(lines))}줄 번역 ===\n{translated}\n\n"
+        if page.startswith("1") or page[0].isdigit():
+            try:
+                split_idx = page.find("=====")
+                page_num = page[:split_idx].strip()
+                page_content = page[split_idx + 5:].strip()
+
+                translated = translation.translate(page_content)
+                result = f"===== Page {page_num} 번역 =====\n{translated}\n\n"
+            except Exception as e:
+                result = f"[Page {page_num} 번역 오류: {e}]\n\n"
+        else:
+            # 구분자 없이 그냥 들어온 첫 페이지
+            try:
+                translated = translation.translate(page.strip())
+                result = f"===== 번역 결과 =====\n{translated}\n\n"
+            except Exception as e:
+                result = f"[번역 오류: {e}]\n\n"
+
         output_textbox.insert(tk.END, result)
         output_textbox.see(tk.END)
         translated_results.append(result)
