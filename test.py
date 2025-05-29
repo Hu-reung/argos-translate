@@ -81,7 +81,7 @@ def translate_texts():
 
     save_button.config(state=tk.NORMAL)
 
-# ✅ 저장 함수
+# 저장 함수
 def save_results():
     if not translated_results:
         messagebox.showwarning("경고", "저장할 내용이 없습니다.")
@@ -96,7 +96,7 @@ def save_results():
         except Exception as e:
             messagebox.showerror("오류", f"파일 저장 중 오류:\n{e}")
 
-# ✅ GUI 설정
+# GUI 설정
 root = tk.Tk()
 root.title("PDF 영어 → 한국어 번역기")
 
